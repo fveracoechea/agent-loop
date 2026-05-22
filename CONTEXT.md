@@ -46,10 +46,27 @@ _Avoid_: Settings, configuration, options
 The AI model assigned to an agent role, specified in `provider/model` format (e.g. `opencode/kimi-k2.6`, `openrouter/anthropic/claude-sonnet-4`). The provider determines which backend serves the model.
 _Avoid_: Engine, backend, AI model
 
+**Project Agent Configuration**:
+The context section injected into every agent prompt, containing the project's `AGENTS.md`, `docs/agents/` files, `CONTEXT.md`, and manifest scripts. Agents use this to discover project conventions dynamically rather than relying on hardcoded assumptions.
+_Avoid_: System prompt, context block, instructions
+
+**Convention-adaptive**:
+The property of agent prompts that instruct agents to read project documentation (e.g., `AGENTS.md`, `docs/agents/issue-tracker.md`, `package.json` scripts) to determine the correct commands, labels, and workflows rather than assuming a fixed toolchain.
+_Avoid_: Dynamic, self-configuring
+
+**Issue Tracker**:
+The system where the project's tasks live (GitHub Issues, GitLab Issues, local markdown, Jira, etc.). The Implementer discovers how to interact with it by reading `docs/agents/issue-tracker.md` in the Project Agent Configuration.
+_Avoid_: Ticket system, bug tracker, task manager
+
+**Ready-for-agent Label**:
+The label (or equivalent marker) that indicates an issue is fully specified and safe for an AFK agent to pick up. The actual string varies per project and is mapped in `docs/agents/triage-labels.md`.
+_Avoid_: Ready label, agent-ready, todo
+
 ## Flagged ambiguities
 
 - "Branch" without qualification could mean Source Branch, Target Branch, or an iteration branch. Always disambiguate.
 - "Agent" without qualification could mean Implementer or Reviewer. Use the specific role name.
+- "Issue" without qualification could mean a GitHub issue, a local markdown issue, or a generic task. Clarify the tracker context.
 
 ## Example dialogue
 
@@ -68,3 +85,11 @@ _Avoid_: Engine, backend, AI model
 > **Dev**: Can I run multiple Agent Loops on the same repo at the same time?
 >
 > **Expert**: Yes — each iteration uses its own git worktree, so they're fully isolated. But you should ensure each loop uses a different source branch to avoid merge conflicts when they finish.
+>
+> **Dev**: How does the Implementer know which test command to run?
+>
+> **Expert**: It doesn't hardcode `bun test`. Instead, the loop injects the project's `AGENTS.md`, `docs/agents/` files, and `package.json` scripts into the prompt as Project Agent Configuration. The agent reads those docs and discovers the correct commands itself.
+>
+> **Dev**: What if my project uses GitLab instead of GitHub for issues?
+>
+> **Expert**: The Implementer reads `docs/agents/issue-tracker.md` from the Project Agent Configuration. If that file describes GitLab conventions (using `glab`), the agent uses those commands. The loop is tracker-agnostic — it depends entirely on what the project documents about itself.

@@ -129,6 +129,39 @@ export function parseCompletionSignal(output: string): CompletionSignal {
 // Context gathering
 // ---------------------------------------------------------------------------
 
+export type ProjectDoc = {
+	path: string;
+	content: string;
+};
+
+async function readProjectDoc(path: string): Promise<ProjectDoc | undefined> {
+	const file = Bun.file(path);
+	if (await file.exists()) {
+		return { path, content: await file.text() };
+	}
+	return undefined;
+}
+
+async function readPackageScripts(): Promise<string | undefined> {
+	const pkg = Bun.file("package.json");
+	if (!(await pkg.exists())) return undefined;
+
+	try {
+		const json = await pkg.json();
+		const scripts = json?.scripts;
+		if (!scripts || Object.keys(scripts).length === 0) return undefined;
+
+		const lines = Object.entries(scripts as Record<string, string>).map(
+			([name, cmd]) => `  "${name}": "${cmd}"`,
+		);
+		return ["```json", '{"scripts": {', lines.join(",\n"), "}}", "```"].join(
+			"\n",
+		);
+	} catch {
+		return undefined;
+	}
+}
+
 export async function gatherContext(): Promise<string> {
 	const { $ } = await import("bun");
 
@@ -141,7 +174,15 @@ export async function gatherContext(): Promise<string> {
 		statusResult.stdout.toString().trim() || "No uncommitted changes";
 	const log = logResult.stdout.toString().trim() || "No commits";
 
-	return [
+	// Read project configuration docs
+	const agentsMd = await readProjectDoc("AGENTS.md");
+	const issueTrackerMd = await readProjectDoc("docs/agents/issue-tracker.md");
+	const triageLabelsMd = await readProjectDoc("docs/agents/triage-labels.md");
+	const domainMd = await readProjectDoc("docs/agents/domain.md");
+	const contextMd = await readProjectDoc("CONTEXT.md");
+	const packageScripts = await readPackageScripts();
+
+	const sections: string[] = [
 		"## Context",
 		"",
 		"### Git Status",
@@ -154,5 +195,39 @@ export async function gatherContext(): Promise<string> {
 		log,
 		"```",
 		"",
-	].join("\n");
+	];
+
+	if (agentsMd || issueTrackerMd || triageLabelsMd || domainMd || contextMd) {
+		sections.push("## Project Agent Configuration", "");
+	}
+
+	function addDocSection(doc: ProjectDoc | undefined, title: string) {
+		if (doc) {
+			sections.push(`### ${title} (${doc.path})`, "", doc.content, "");
+		} else {
+			sections.push(
+				`### ${title}`,
+				"",
+				"*(File not found — proceed without it.)*",
+				"",
+			);
+		}
+	}
+
+	addDocSection(agentsMd, "AGENTS.md");
+	addDocSection(issueTrackerMd, "Issue Tracker");
+	addDocSection(triageLabelsMd, "Triage Labels");
+	addDocSection(domainMd, "Domain Docs");
+	addDocSection(contextMd, "CONTEXT.md");
+
+	if (packageScripts) {
+		sections.push(
+			"### Available Scripts (package.json)",
+			"",
+			packageScripts,
+			"",
+		);
+	}
+
+	return sections.join("\n");
 }
