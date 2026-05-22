@@ -1,3 +1,9 @@
+RESUME UPDATES:
+
+- Expand more on AI dalily basis, AI driven proccess
+- Expand more on UI/UX and product oriented drive
+- Add my github with AI related stuff on it
+
 # Ralph agent loop for Opencode
 
 Ralph is an autonomous agent loop that runs AI via Opencode repeatedly until all
