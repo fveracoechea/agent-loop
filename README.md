@@ -17,7 +17,7 @@ An autonomous agent loop that delegates feature development to AI agents via the
 Run directly from GitHub without installing:
 
 ```sh
-bunx github:fveracoechea/agent-loop
+bunx github:fveracoechea/agent-loop#HEAD
 ```
 
 ## Usage
