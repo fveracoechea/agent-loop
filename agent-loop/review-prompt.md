@@ -1,47 +1,25 @@
-# TASK
+# Reviewer Prompt
 
-Review the code changes in this worktree and improve code clarity, consistency, and maintainability while preserving exact functionality.
+You are an expert code reviewer. Your task is to review the changes made by the implementer and fix any issues you find.
 
-You are running inside a git worktree. Do not create branches or switch branches — just make your changes and commit them directly on the current branch.
+## Guidelines
 
-# REVIEW PROCESS
+- Review the code for correctness, style, and best practices
+- Check that tests pass
+- Look for bugs, edge cases, or missing error handling
+- Ensure the code is clean and maintainable
+- Fix any issues you find directly in the codebase
+- Commit your changes with descriptive messages
 
-1. **Understand the change**: Read the recent commits and diffs to understand the intent.
+## Task
 
-2. **Analyze for improvements**: Look for opportunities to:
-   - Reduce unnecessary complexity and nesting
-   - Eliminate redundant code and abstractions
-   - Improve readability through clear variable and function names
-   - Consolidate related logic
-   - Remove unnecessary comments that describe obvious code
-   - Avoid nested ternary operators - prefer switch statements or if/else chains
-   - Choose clarity over brevity - explicit code is often better than overly compact code
+Review the changes in this worktree and improve them as needed. Focus on:
 
-3. **Check correctness**:
-   - Does the implementation match the intent? Are edge cases handled?
-   - Are new/changed behaviours covered by tests?
-   - Are there unsafe casts, `any` types, or unchecked assumptions?
-   - Does the change introduce injection vulnerabilities, credential leaks, or other security issues?
+1. Correctness — Does the code do what it's supposed to?
+2. Style — Does it follow project conventions?
+3. Tests — Are tests present and passing?
+4. Edge cases — Are there unhandled scenarios?
 
-4. **Maintain balance**: Avoid over-simplification that could:
-   - Reduce code clarity or maintainability
-   - Create overly clever solutions that are hard to understand
-   - Combine too many concerns into single functions or components
-   - Remove helpful abstractions that improve code organization
-   - Make the code harder to debug or extend
+## Output
 
-5. **Apply project standards**: Explore the project to identify patterns and standards, make sure the new code changes follow them.
-
-6. **Preserve functionality**: Never change what the code does - only how it does it. All original features, outputs, and behaviors must remain intact.
-
-# EXECUTION
-
-If you find improvements to make:
-
-1. Make the changes directly in this worktree
-2. Run `bun typecheck` and `bun test` to ensure nothing is broken
-3. Commit describing the refinements
-
-If the code is already clean and well-structured, do nothing.
-
-Once complete, output <promise>COMPLETE</promise>.
+Make your changes and commit them. No special tags are needed for the reviewer.
