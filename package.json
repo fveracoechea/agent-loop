@@ -1,6 +1,9 @@
 {
 	"name": "ralph-opencode",
 	"private": true,
+	"bin": {
+		"agent-loop": "./agent-loop.ts"
+	},
 	"scripts": {
 		"test": "bun test",
 		"typecheck": "tsc -b --noEmit",
