@@ -1,7 +1,9 @@
 # Agent Loop for Opencode
 
-An agent orchestrator that delegates feature development to [Opencode](https://opencode.ai/) SDK.
+An agent orchestrator that delegates feature development to [Opencode](https://opencode.ai/).
+
 Each iteration creates a fresh **git worktree**, runs an Implementer agent to write changes and a Reviewer agent to refine them, then merges the result back to your source branch.
+
 The loop repeats until the task is complete or the maximum number of iterations is reached.
 
 ## Requirements
