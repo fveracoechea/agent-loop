@@ -1,11 +1,14 @@
 # Agent Loop for Opencode
 
-An autonomous agent loop that delegates feature development to AI agents via the [Opencode](https://opencode.ai/) SDK. Each iteration creates a fresh git worktree, runs an Implementer agent to write changes and a Reviewer agent to refine them, then merges the result back to your source branch. The loop repeats until the task is complete or the maximum number of iterations is reached.
+An agent orchestrator that delegates feature development to [Opencode](https://opencode.ai/) SDK.
+Each iteration creates a fresh **git worktree**, runs an Implementer agent to write changes and a Reviewer agent to refine them, then merges the result back to your source branch.
+The loop repeats until the task is complete or the maximum number of iterations is reached.
 
 ## Requirements
 
 - [Opencode](https://opencode.ai/) CLI installed and authenticated
 - [Bun](https://bun.sh/) runtime
+- [mattpocock/skills](https://github.com/mattpocock/skills)
 - Git repository
 
 **For issue tracker integration:**
