@@ -148,5 +148,32 @@ test("checkout confirms payment before completing", async () => {
 
   await expect(checkout(cart, payment)).rejects.toThrow("payment declined");
 });
+
+## Snapshot Testing
+
+**Use snapshots when the exact output format matters** and is expected to be stable — CLI help text, rendered markdown, generated config files, etc. Snapshots turn format changes into deliberate, reviewable diffs instead of silent test failures.
+
+```typescript
+// GOOD: Snapshot for stable CLI output
+test("help text matches expected format", () => {
+  expect(renderHelp()).toMatchSnapshot();
+});
+```
+
+**Do not use snapshots for unstable or dynamic data.** If the output includes timestamps, random IDs, or platform-specific paths, the snapshot will flap and lose its value.
+
+```typescript
+// BAD: Snapshot will break on every run
+test("report includes timestamp", () => {
+  expect(generateReport()).toMatchSnapshot(); // contains new Date().toISOString()
+});
+```
+
+**Snapshot discipline:**
+- Treat snapshot changes as code changes — review them in PRs, don't blindly update
+- Use `bun test --update-snapshots` only after confirming the new output is correct
+- Keep snapshot files committed so CI can detect unintended output changes
+- If a snapshot fails and the change is intentional, update it; if not, fix the code
+- Prefer explicit assertions over snapshots when the format is simple enough to assert directly
 ```
 ```
