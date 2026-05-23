@@ -167,6 +167,9 @@ describe("runAgentPromptStreamed", () => {
 
 	test("returns error when promptAsync fails", async () => {
 		const client = {
+			global: {
+				event: async () => ({ stream: (async function* () {})() }),
+			},
 			session: {
 				promptAsync: async () => {
 					throw new Error("prompt failed");
@@ -251,7 +254,7 @@ describe("runAgentPromptStreamed", () => {
 		consoleSpy.mockRestore();
 	});
 
-	test("skips non-text non-reasoning parts", async () => {
+	test("renders running tool part with title", async () => {
 		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
 
 		const events = [
@@ -265,10 +268,129 @@ describe("runAgentPromptStreamed", () => {
 							id: "p1",
 							sessionID: "s1",
 							messageID: "m1",
+							tool: "bash",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: {},
+								title: "listing files",
+								time: { start: 0 },
+							},
 						},
 					},
 				},
 			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"[Implementer] 🔧 bash: listing files",
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("renders completed tool part", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "edit",
+							callID: "c1",
+							state: {
+								status: "completed",
+								input: {},
+								output: "done",
+								title: "edit file",
+								metadata: {},
+								time: { start: 0, end: 1 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] ✓ edit done");
+
+		consoleSpy.mockRestore();
+	});
+
+	test("renders error tool part", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "bash",
+							callID: "c1",
+							state: {
+								status: "error",
+								input: {},
+								error: "command not found",
+								metadata: {},
+								time: { start: 0, end: 1 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"[Implementer] ✗ bash: command not found",
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("buffers text deltas and flushes on newline", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
 			{
 				directory: "/path/to/worktree",
 				payload: {
@@ -276,12 +398,12 @@ describe("runAgentPromptStreamed", () => {
 					properties: {
 						part: {
 							type: "text",
-							text: "Result",
-							id: "p2",
+							text: "line one\nline two",
+							id: "p1",
 							sessionID: "s1",
 							messageID: "m1",
 						},
-						delta: "Result",
+						delta: "line one\nline two",
 					},
 				},
 			},
@@ -293,14 +415,14 @@ describe("runAgentPromptStreamed", () => {
 				parts: [
 					{
 						type: "text",
-						text: "Result",
+						text: "line one\nline two",
 					},
 				],
 			},
 		];
 
 		const client = createMockClient(events, finalMessages);
-		const result = await runAgentPromptStreamed(
+		await runAgentPromptStreamed(
 			client,
 			"s1",
 			"opencode/test",
@@ -308,13 +430,89 @@ describe("runAgentPromptStreamed", () => {
 			"implementer",
 		);
 
-		expect(result.isOk()).toBe(true);
-		expect(consoleSpy).not.toHaveBeenCalledWith(
-			expect.stringContaining("[tool]"),
-		);
-		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] Result");
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] line one");
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] line two");
 
 		consoleSpy.mockRestore();
+	});
+
+	test("flushes remaining text buffer at stream end", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "no newline",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "no newline",
+					},
+				},
+			},
+		];
+
+		const finalMessages = [
+			{
+				info: { role: "assistant" },
+				parts: [
+					{
+						type: "text",
+						text: "no newline",
+					},
+				],
+			},
+		];
+
+		const client = createMockClient(events, finalMessages);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] no newline");
+
+		consoleSpy.mockRestore();
+	});
+
+	test("subscribes to global events before calling promptAsync", async () => {
+		const calls: string[] = [];
+
+		const stream = (async function* () {})();
+
+		const client = {
+			global: {
+				event: async () => {
+					calls.push("event");
+					return { stream };
+				},
+			},
+			session: {
+				promptAsync: async () => {
+					calls.push("promptAsync");
+				},
+				messages: async () => ({ data: [] }),
+			},
+		} as unknown as import("./sdk").OpencodeClient;
+
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(calls).toEqual(["event", "promptAsync"]);
 	});
 
 	test("ignores events from other sessions", async () => {

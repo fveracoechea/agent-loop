@@ -1,4 +1,4 @@
-import type { OpencodeClient } from "@opencode-ai/sdk";
+import type { OpencodeClient, ToolPart } from "@opencode-ai/sdk";
 import { createOpencode } from "@opencode-ai/sdk";
 import { err, ok, type Result } from "neverthrow";
 import { type SdkError, sdkError } from "./errors";
@@ -127,6 +127,10 @@ export async function runAgentPromptStreamed(
 	try {
 		const { providerID, modelID } = parseModel(model);
 		const label = phase === "implementer" ? "Implementer" : "Reviewer";
+		const isDebug = process.env.DEBUG === "1";
+
+		// Subscribe BEFORE starting the prompt to avoid missing early events
+		const { stream } = await client.global.event({});
 
 		// Start the prompt asynchronously
 		await client.session.promptAsync({
@@ -137,11 +141,26 @@ export async function runAgentPromptStreamed(
 			},
 		});
 
-		// Subscribe to global events (system-wide, not directory-scoped)
-		const { stream } = await client.global.event({});
-
 		// Accumulate streamed text as fallback
 		let accumulatedText = "";
+
+		// Buffer text/reasoning deltas per part.id, flush on newline
+		const textBuffers = new Map<string, string>();
+
+		function flushAllBuffers(): void {
+			for (const buffer of textBuffers.values()) {
+				if (buffer.length > 0) {
+					console.log(`[${label}] ${buffer}`);
+				}
+			}
+			textBuffers.clear();
+		}
+
+		function trace(...args: unknown[]): void {
+			if (isDebug) {
+				console.error("[trace]", ...args);
+			}
+		}
 
 		// Stream events and print deltas
 		for await (const rawEvent of stream) {
@@ -176,25 +195,61 @@ export async function runAgentPromptStreamed(
 					"part" in event.properties
 				) {
 					const properties = event.properties as {
-						part: { sessionID?: string; type?: string };
+						part: { sessionID?: string; type?: string; id?: string };
 						delta?: string;
 					};
 
-					if (properties.part.sessionID !== sessionId) continue;
+					const part = properties.part;
+					const delta = properties.delta;
 
-					if (
-						properties.part.type === "text" ||
-						properties.part.type === "reasoning"
-					) {
-						const delta = properties.delta;
+					trace(
+						`type=${event.type} partType=${part.type} partSession=${part.sessionID} match=${part.sessionID === sessionId} hasDelta=${typeof delta === "string"}`,
+					);
+
+					if (part.sessionID !== sessionId) continue;
+
+					if (part.type === "text" || part.type === "reasoning") {
 						if (typeof delta === "string" && delta.length > 0) {
-							console.log(`[${label}] ${delta}`);
 							accumulatedText += delta;
+
+							let buffer = textBuffers.get(part.id ?? "") ?? "";
+							buffer += delta;
+
+							let newlineIndex = buffer.indexOf("\n");
+							while (newlineIndex !== -1) {
+								const line = buffer.slice(0, newlineIndex);
+								console.log(`[${label}] ${line}`);
+								buffer = buffer.slice(newlineIndex + 1);
+								newlineIndex = buffer.indexOf("\n");
+							}
+
+							textBuffers.set(part.id ?? "", buffer);
+						}
+					} else {
+						// Non-text part — flush any pending text buffers first
+						flushAllBuffers();
+
+						if (part.type === "step-start") {
+							console.log(`[${label}] ▶ step started`);
+						} else if (part.type === "tool") {
+							const toolPart = properties.part as unknown as ToolPart;
+							const state = toolPart.state;
+
+							if (state.status === "running") {
+								const title = state.title ?? "";
+								console.log(`[${label}] 🔧 ${toolPart.tool}: ${title}`);
+							} else if (state.status === "completed") {
+								console.log(`[${label}] ✓ ${toolPart.tool} done`);
+							} else if (state.status === "error") {
+								console.log(`[${label}] ✗ ${toolPart.tool}: ${state.error}`);
+							}
 						}
 					}
 				}
 			}
 		}
+
+		flushAllBuffers();
 
 		// Fetch final messages to get authoritative text
 		const messagesResult = await client.session.messages({

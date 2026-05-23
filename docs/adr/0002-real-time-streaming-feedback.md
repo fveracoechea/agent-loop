@@ -60,6 +60,40 @@ After merging the iteration branch back to the source branch, a concise summary 
 - Requires the SDK's `event.subscribe()` endpoint to be available and stable.
 - Raw deltas may include partial sentences or reasoning fragments, which can look messy to a human observer.
 
+## Addendum: Silent Output Fix (2026-05-23)
+
+### Problem
+
+After deploying ADR-0002, the loop showed only phase-boundary logs (`🔨 Implementer started` / `📋 Implementer finished`) with total silence between. The opencode TUI on the same SDK showed full progress, so the SDK was emitting events but the consumer was missing them.
+
+### Root causes
+
+1. **Race condition:** `client.global.event({})` was subscribed *after* `session.promptAsync()` fired. With no SSE replay, early deltas were lost.
+2. **Filter mismatch:** The consumer only processed `text` and `reasoning` part types. When the agent emitted only `tool` and `step-start` parts mid-flight, nothing was printed until the final text appeared at the end.
+3. **Per-token spam:** Text deltas were printed immediately with `console.log`, producing noisy, partial-line output.
+
+### Fix
+
+1. **Subscribe before prompt:** Reordered `client.global.event({})` before `client.session.promptAsync()` so the stream is ready before any events fire.
+2. **Render tool & step parts:** Added minimal one-line rendering:
+   - `step-start` → `[Implementer] ▶ step started`
+   - `tool` running → `[Implementer] 🔧 <tool>: <title>`
+   - `tool` completed → `[Implementer] ✓ <tool> done`
+   - `tool` error → `[Implementer] ✗ <tool>: <error>`
+3. **Buffer text/reasoning deltas:** Deltas are accumulated per `part.id` and flushed only on newline (or part transition / stream end). This eliminates per-token spam while preserving real-time visibility.
+4. **Diagnostic trace:** Added `DEBUG=1` gated trace logging inside `runAgentPromptStreamed` for future event inspection.
+
+### Updated streaming mechanism
+
+1. Subscribe to global events via `client.global.event({})`.
+2. Fire the prompt via `client.session.promptAsync()`.
+3. Iterate the SSE `AsyncGenerator`.
+4. For each `message.part.updated` event:
+   - Filter to the current session ID.
+   - `text` / `reasoning`: buffer the `delta`, flush complete lines on `\n`.
+   - `step-start` / `tool`: flush any pending text buffers, then print one-line status.
+5. After the stream closes, flush remaining buffers, then fetch authoritative final messages via `session.messages()`.
+
 ## Related
 
 - `CONTEXT.md` — Streamed Output, Phase Prefix, Iteration

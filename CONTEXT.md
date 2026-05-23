@@ -68,7 +68,7 @@ The constraint that the Implementer must resolve exactly one ready-for-agent iss
 _Avoid_: Batch, bulk, multi-issue
 
 **Streamed Output**:
-Real-time text and reasoning deltas printed to the terminal as the agent generates them, produced by subscribing to the SDK's SSE event stream during `promptAsync` execution.
+Real-time progress printed to the terminal as the agent generates it, produced by subscribing to the SDK's SSE event stream during `promptAsync` execution. Includes text and reasoning deltas (buffered and flushed on newline) plus minimal one-line status for tool calls and step transitions.
 _Avoid_: Live log,实时 output, progressive display
 
 **Phase Prefix**:
