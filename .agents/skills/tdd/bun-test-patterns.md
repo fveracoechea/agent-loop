@@ -128,6 +128,42 @@ src/
 
 This makes it obvious which tests cover which module, and deleting a module deletes its tests automatically.
 
+## Test Organization: `describe` vs Flat
+
+Use `describe` blocks to group related behaviors — one block per function or per concept. Keep tests inside a block focused on that single thing.
+
+```typescript
+// GOOD: Grouped by function, clear what each test covers
+describe("parseCompletionSignal", () => {
+  test("returns COMPLETE when tag is present", () => { … });
+  test("returns NEXT when tag is present", () => { … });
+  test("returns null when no tag is present", () => { … });
+});
+
+describe("runAgentPromptStreamed", () => {
+  test("returns accumulated text from parts", async () => { … });
+  test("returns error when promptAsync fails", async () => { … });
+  test("skips non-text non-reasoning parts", async () => { … });
+});
+```
+
+Avoid deep nesting. One or two levels of `describe` is enough. Deeper nesting makes tests harder to scan and obscures which setup applies to which test.
+
+```typescript
+// BAD: Deeply nested, hard to tell what's being tested
+describe("sdk", () => {
+  describe("session", () => {
+    describe("when creating", () => {
+      describe("with valid client", () => {
+        test("works", () => { … });
+      });
+    });
+  });
+});
+```
+
+Use flat tests (no `describe`) only when a module exports a single function with very few behaviors. As soon as you have multiple functions or multiple dimensions of behavior, add `describe` blocks.
+
 ## Running Tests
 
 ```bash
