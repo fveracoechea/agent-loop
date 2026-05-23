@@ -16,6 +16,30 @@ export async function getCurrentBranch(): Promise<Result<string, GitError>> {
 	return ok(result.stdout.toString().trim());
 }
 
+export async function isMainWorktree(): Promise<Result<boolean, GitError>> {
+	const gitDirResult = await $`git rev-parse --git-dir`.nothrow().quiet();
+	if (gitDirResult.exitCode !== 0) {
+		return err(gitError("Failed to get git dir", "git rev-parse --git-dir"));
+	}
+
+	const commonDirResult = await $`git rev-parse --git-common-dir`
+		.nothrow()
+		.quiet();
+	if (commonDirResult.exitCode !== 0) {
+		return err(
+			gitError(
+				"Failed to get git common dir",
+				"git rev-parse --git-common-dir",
+			),
+		);
+	}
+
+	const gitDir = gitDirResult.stdout.toString().trim();
+	const commonDir = commonDirResult.stdout.toString().trim();
+
+	return ok(gitDir === commonDir);
+}
+
 export async function createWorktree(
 	path: string,
 	branch: string,

@@ -1,3 +1,4 @@
+import path from "node:path";
 import { err, ok, type Result } from "neverthrow";
 import { loadConfig } from "./config";
 import type { AgentLoopError } from "./errors";
@@ -9,10 +10,12 @@ import {
 	getCommitLog,
 	getCurrentBranch,
 	hasCommits,
+	isMainWorktree,
 	mergeBranch,
 	removeWorktree,
 } from "./git";
 import { logger } from "./logger";
+import { resolveWorktreePath } from "./path";
 import { implementPrompt } from "./prompts/implement-prompt";
 import { reviewPrompt } from "./prompts/review-prompt";
 import {
@@ -75,17 +78,36 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 		});
 	}
 
-	// Ensure worktrees directory exists
-	await Bun.$`mkdir -p ${config.worktreesDir}`.quiet();
+	// Guard: must run from the main worktree
+	const mainWorktreeResult = await isMainWorktree();
+	if (mainWorktreeResult.isErr()) {
+		return err(mainWorktreeResult.error);
+	}
+	if (!mainWorktreeResult.value) {
+		return err({
+			kind: "ConfigError",
+			message:
+				"Agent Loop must be run from the main worktree, not a linked worktree.",
+		});
+	}
 
 	const originalCwd = process.cwd();
+	const absoluteWorktreesDir = path.resolve(originalCwd, config.worktreesDir);
+
+	// Ensure worktrees directory exists
+	await Bun.$`mkdir -p ${absoluteWorktreesDir}`.quiet();
+
 	let completionSignal: CompletionSignal = null;
 	let iterationsCompleted = 0;
 	let prCreated = false;
 
 	for (let iteration = 1; iteration <= config.maxIterations; iteration++) {
 		const branch = `agent-loop/${Date.now()}`;
-		const worktreePath = `${config.worktreesDir}/${Date.now()}`;
+		const worktreePath = resolveWorktreePath(
+			absoluteWorktreesDir,
+			originalCwd,
+			Date.now(),
+		);
 
 		logger.info(`\n=== Iteration ${iteration}/${config.maxIterations} ===`);
 		logger.info(`Branch: ${branch}`);
