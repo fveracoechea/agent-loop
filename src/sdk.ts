@@ -25,7 +25,7 @@ export async function startServer(): Promise<
 		return ok({
 			client,
 			close: async () => {
-				await server.close();
+				return server.close();
 			},
 		});
 	} catch (cause) {
