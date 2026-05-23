@@ -86,7 +86,37 @@ Rules:
 - Don't anticipate future tests
 - Keep tests focused on observable behavior
 
-### 4. Refactor
+### 4. Error Paths
+
+After the happy path works, test the failure modes that matter:
+
+```
+RED:   Write test for error behavior → fails
+GREEN: Minimal code to handle error → passes
+```
+
+Error tests are behavior too. A function that returns `Result<T, E>` has two observable behaviors: success and failure. Test both if callers will branch on them.
+
+```typescript
+// Tracer bullet — happy path
+test("checkout succeeds with valid payment", async () => { … });
+
+// Error path — what the caller needs to know
+test("checkout fails when payment is declined", async () => {
+  const cart = createCart({ total: 100 });
+  const badPayment = createDeclinedPaymentGateway();
+  const result = await checkout(cart, badPayment);
+  expect(result.isErr()).toBe(true);
+});
+```
+
+Guidelines:
+- Test errors callers actually handle (not every possible throw)
+- Use the same public interface — don't reach into internals to trigger errors
+- For `Result` types, assert on the error shape the caller checks
+- One error behavior per test, same as happy path
+
+### 5. Refactor
 
 After all tests pass, look for [refactor candidates](refactoring.md):
 
