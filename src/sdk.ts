@@ -3,6 +3,8 @@ import { createOpencode } from "@opencode-ai/sdk";
 import { err, ok, type Result } from "neverthrow";
 import { type SdkError, sdkError } from "./errors";
 
+export type { OpencodeClient };
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -112,6 +114,102 @@ export async function runAgentPrompt(
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : String(cause);
 		return err(sdkError(`Prompt failed: ${message}`, "session.prompt"));
+	}
+}
+
+export async function runAgentPromptStreamed(
+	client: OpencodeClient,
+	sessionId: string,
+	model: string,
+	prompt: string,
+	phase: AgentPhase,
+): Promise<Result<string, SdkError>> {
+	try {
+		const { providerID, modelID } = parseModel(model);
+		const label = phase === "implementer" ? "Implementer" : "Reviewer";
+
+		// Start the prompt asynchronously
+		await client.session.promptAsync({
+			path: { id: sessionId },
+			body: {
+				model: { providerID, modelID },
+				parts: [{ type: "text", text: prompt }],
+			},
+		});
+
+		// Subscribe to events
+		const { stream } = await client.event.subscribe({});
+
+		// Stream events and print deltas
+		for await (const event of stream) {
+			if (
+				event &&
+				typeof event === "object" &&
+				"type" in event &&
+				event.type === "message.part.updated" &&
+				"properties" in event &&
+				event.properties &&
+				typeof event.properties === "object" &&
+				"part" in event.properties
+			) {
+				const properties = event.properties as {
+					part: { sessionID?: string; type?: string };
+					delta?: string;
+				};
+
+				if (properties.part.sessionID !== sessionId) continue;
+
+				if (
+					properties.part.type === "text" ||
+					properties.part.type === "reasoning"
+				) {
+					const delta = properties.delta;
+					if (typeof delta === "string" && delta.length > 0) {
+						console.log(`[${label}] ${delta}`);
+					}
+				}
+			}
+		}
+
+		// Fetch final messages to get authoritative text
+		const messagesResult = await client.session.messages({
+			path: { id: sessionId },
+		});
+
+		const messages =
+			messagesResult.data &&
+			typeof messagesResult.data === "object" &&
+			"messages" in messagesResult.data
+				? (messagesResult.data as { messages: Array<unknown> }).messages
+				: Array.isArray(messagesResult.data)
+					? messagesResult.data
+					: [];
+
+		const assistantMessage = messages.find(
+			(msg): msg is { role: string; parts?: Array<unknown> } =>
+				msg !== null &&
+				typeof msg === "object" &&
+				"role" in msg &&
+				msg.role === "assistant",
+		);
+
+		const parts = assistantMessage?.parts ?? [];
+		const text = parts
+			.filter(
+				(part): part is { type: string; text?: string } =>
+					part !== null &&
+					typeof part === "object" &&
+					"type" in part &&
+					(part.type === "text" || part.type === "reasoning"),
+			)
+			.map((part) => part.text)
+			.filter((text): text is string => text !== undefined)
+			.join("");
+
+		return ok(text);
+	} catch (cause) {
+		const message = cause instanceof Error ? cause.message : String(cause);
+		return err(sdkError(`Prompt failed: ${message}`, "session.promptAsync"));
 	}
 }
 

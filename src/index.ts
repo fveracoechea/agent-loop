@@ -21,7 +21,7 @@ import {
 	deleteSession,
 	gatherContext,
 	parseCompletionSignal,
-	runAgentPrompt,
+	runAgentPromptStreamed,
 	startServer,
 } from "./sdk";
 
@@ -129,7 +129,7 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 
 				const fullImplementPrompt = `${context}\n\n${implementPrompt}`;
 
-				logger.info("Running implementer...");
+				logger.info("🔨 Implementer started");
 
 				const implSessionResult = await createSession(client);
 				if (implSessionResult.isErr()) {
@@ -141,16 +141,16 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 				}
 				const implSessionId = implSessionResult.value;
 
-				const implResult = await runAgentPrompt(
+				const implResult = await runAgentPromptStreamed(
 					client,
 					implSessionId,
 					config.implementer.model,
 					fullImplementPrompt,
+					"implementer",
 				);
 
 				if (implResult.isOk()) {
-					logger.info("Implementer response:");
-					logger.info(implResult.value);
+					logger.info("📋 Implementer finished");
 					completionSignal = parseCompletionSignal(implResult.value);
 				} else {
 					logger.warn(`Implementer prompt failed: ${implResult.error.message}`);
@@ -191,7 +191,7 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 
 				const fullReviewPrompt = `${context}\n\n${reviewPrompt}`;
 
-				logger.info("Running reviewer...");
+				logger.info("🔍 Reviewer started");
 
 				const reviewSessionResult = await createSession(client);
 				if (reviewSessionResult.isErr()) {
@@ -203,16 +203,16 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 				}
 				const reviewSessionId = reviewSessionResult.value;
 
-				const reviewResult = await runAgentPrompt(
+				const reviewResult = await runAgentPromptStreamed(
 					client,
 					reviewSessionId,
 					config.reviewer.model,
 					fullReviewPrompt,
+					"reviewer",
 				);
 
 				if (reviewResult.isOk()) {
-					logger.info("Reviewer response:");
-					logger.info(reviewResult.value);
+					logger.info("📋 Reviewer finished");
 				} else {
 					logger.warn(`Reviewer prompt failed: ${reviewResult.error.message}`);
 				}
@@ -250,6 +250,24 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 			}
 
 			logger.info(`Merged ${branch} into ${sourceBranch}`);
+
+			// -----------------------------------------------------------------
+			// Iteration summary
+			// -----------------------------------------------------------------
+
+			const commitLog = await getCommitLog(branch, sourceBranch);
+			const commitCount = commitLog
+				.split("\n")
+				.filter((line) => line.trim().length > 0).length;
+
+			logger.info("\n=== Iteration Summary ===");
+			logger.info(`Signal: ${completionSignal ?? "(none)"}`);
+			logger.info(`Commits: ${commitCount}`);
+			if (commitCount > 0) {
+				logger.info(`Commit log:\n${commitLog}`);
+			}
+			logger.info(`Merge: success`);
+			logger.info("========================\n");
 
 			// -----------------------------------------------------------------
 			// Stop condition

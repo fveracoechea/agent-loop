@@ -16,12 +16,20 @@ The \`## Project Agent Configuration\` section in the context contains this repo
 
 5. **Read \`CONTEXT.md\`** (linked in the "Domain Docs" section if present) and any relevant \`docs/adr/\` files to understand the domain language and architectural decisions.
 
+## Scope constraint
+
+**You must implement exactly ONE issue per session.** Do not start a second issue. Pick the single highest-priority ready issue, implement it fully, and then stop.
+
 ## How to implement
 
 - Follow the coding style and conventions described in \`AGENTS.md\` (if present in the context).
 - Implement the changes that satisfy the issue's acceptance criteria.
 - After making changes, determine the correct quality commands for this project by inspecting the "Available Scripts" section (if present) or the project's manifest files (e.g., \`package.json\`, \`Cargo.toml\`, \`Makefile\`). Run all relevant checks — tests, lint, typecheck, build, etc.
 - Commit your changes with a descriptive message that references the issue number or title.
+
+## Update the issue tracker
+
+After you finish implementing and committing the issue, update the issue in the tracker so it is not picked again. Use the issue tracker conventions from \`docs/agents/issue-tracker.md\` — for example, remove the \`ready-for-agent\` label, close the issue, or add a comment indicating it has been implemented.
 
 ## Output
 
