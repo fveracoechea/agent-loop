@@ -140,32 +140,51 @@ export async function runAgentPromptStreamed(
 		// Subscribe to events
 		const { stream } = await client.event.subscribe({});
 
+		// Accumulate streamed text as fallback
+		let accumulatedText = "";
+
 		// Stream events and print deltas
 		for await (const event of stream) {
 			if (
 				event &&
 				typeof event === "object" &&
 				"type" in event &&
-				event.type === "message.part.updated" &&
 				"properties" in event &&
 				event.properties &&
-				typeof event.properties === "object" &&
-				"part" in event.properties
+				typeof event.properties === "object"
 			) {
-				const properties = event.properties as {
-					part: { sessionID?: string; type?: string };
-					delta?: string;
-				};
+				// Handle session idle — agent finished processing
+				if (event.type === "session.idle") {
+					const idleProps = event.properties as {
+						sessionID?: string;
+					};
+					if (idleProps.sessionID === sessionId) {
+						break;
+					}
+					continue;
+				}
 
-				if (properties.part.sessionID !== sessionId) continue;
-
+				// Handle message part updates
 				if (
-					properties.part.type === "text" ||
-					properties.part.type === "reasoning"
+					event.type === "message.part.updated" &&
+					"part" in event.properties
 				) {
-					const delta = properties.delta;
-					if (typeof delta === "string" && delta.length > 0) {
-						console.log(`[${label}] ${delta}`);
+					const properties = event.properties as {
+						part: { sessionID?: string; type?: string };
+						delta?: string;
+					};
+
+					if (properties.part.sessionID !== sessionId) continue;
+
+					if (
+						properties.part.type === "text" ||
+						properties.part.type === "reasoning"
+					) {
+						const delta = properties.delta;
+						if (typeof delta === "string" && delta.length > 0) {
+							console.log(`[${label}] ${delta}`);
+							accumulatedText += delta;
+						}
 					}
 				}
 			}
@@ -185,16 +204,23 @@ export async function runAgentPromptStreamed(
 					? messagesResult.data
 					: [];
 
-		const assistantMessage = messages.find(
-			(msg): msg is { role: string; parts?: Array<unknown> } =>
-				msg !== null &&
-				typeof msg === "object" &&
-				"role" in msg &&
-				msg.role === "assistant",
+		const assistantEntry = messages.find(
+			(msg): msg is { info: { role: string }; parts: Array<unknown> } => {
+				if (msg === null || typeof msg !== "object") return false;
+				const record = msg as Record<string, unknown>;
+				if (
+					!("info" in record) ||
+					typeof record.info !== "object" ||
+					record.info === null
+				)
+					return false;
+				const info = record.info as Record<string, unknown>;
+				return "role" in info && info.role === "assistant";
+			},
 		);
 
-		const parts = assistantMessage?.parts ?? [];
-		const text = parts
+		const parts = assistantEntry?.parts ?? [];
+		const messagesText = parts
 			.filter(
 				(part): part is { type: string; text?: string } =>
 					part !== null &&
@@ -206,7 +232,9 @@ export async function runAgentPromptStreamed(
 			.filter((text): text is string => text !== undefined)
 			.join("");
 
-		return ok(text);
+		// Use authoritative messages text if available, otherwise fall back to
+		// accumulated streamed text
+		return ok(messagesText || accumulatedText);
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : String(cause);
 		return err(sdkError(`Prompt failed: ${message}`, "session.promptAsync"));

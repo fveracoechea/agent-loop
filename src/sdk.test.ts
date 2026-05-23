@@ -137,7 +137,7 @@ describe("runAgentPromptStreamed", () => {
 
 		const finalMessages = [
 			{
-				role: "assistant",
+				info: { role: "assistant" },
 				parts: [
 					{
 						type: "text",
@@ -214,7 +214,7 @@ describe("runAgentPromptStreamed", () => {
 
 		const finalMessages = [
 			{
-				role: "assistant",
+				info: { role: "assistant" },
 				parts: [
 					{
 						type: "text",
@@ -271,7 +271,7 @@ describe("runAgentPromptStreamed", () => {
 
 		const finalMessages = [
 			{
-				role: "assistant",
+				info: { role: "assistant" },
 				parts: [
 					{
 						type: "text",
@@ -333,7 +333,7 @@ describe("runAgentPromptStreamed", () => {
 
 		const finalMessages = [
 			{
-				role: "assistant",
+				info: { role: "assistant" },
 				parts: [
 					{
 						type: "text",
@@ -358,5 +358,112 @@ describe("runAgentPromptStreamed", () => {
 		);
 
 		consoleSpy.mockRestore();
+	});
+
+	test("extracts text from SDK-shaped session.messages response", async () => {
+		const events = [
+			{
+				type: "message.part.updated",
+				properties: {
+					part: {
+						type: "text",
+						text: "Hello ",
+						id: "p1",
+						sessionID: "s1",
+						messageID: "m1",
+					},
+					delta: "Hello ",
+				},
+			},
+		];
+
+		// Real SDK shape: Array<{ info: Message; parts: Array<Part> }>
+		const finalMessages = [
+			{
+				info: {
+					role: "user",
+					id: "u1",
+					sessionID: "s1",
+				},
+				parts: [
+					{
+						type: "text",
+						text: "test prompt",
+						id: "pu1",
+						sessionID: "s1",
+						messageID: "u1",
+					},
+				],
+			},
+			{
+				info: {
+					role: "assistant",
+					id: "a1",
+					sessionID: "s1",
+				},
+				parts: [
+					{
+						type: "text",
+						text: "Hello world",
+						id: "p1",
+						sessionID: "s1",
+						messageID: "a1",
+					},
+				],
+			},
+		];
+
+		const client = createMockClient(events, finalMessages);
+		const result = await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"test prompt",
+			"implementer",
+		);
+
+		expect(unwrap(result)).toBe("Hello world");
+	});
+
+	test("breaks stream on session.idle and returns accumulated text", async () => {
+		// This simulates the real SDK behavior: the stream stays open,
+		// but emits session.idle when the agent finishes.
+		const events = [
+			{
+				type: "message.part.updated",
+				properties: {
+					part: {
+						type: "text",
+						text: "Done",
+						id: "p1",
+						sessionID: "s1",
+						messageID: "m1",
+					},
+					delta: "Done",
+				},
+			},
+			{
+				type: "session.idle",
+				properties: {
+					sessionID: "s1",
+				},
+			},
+			// Stream continues forever — but we should have already broken out
+		];
+
+		// Even if session.messages returns empty/wrong shape,
+		// accumulated text from streaming should be used
+		const finalMessages: unknown[] = [];
+
+		const client = createMockClient(events, finalMessages);
+		const result = await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(unwrap(result)).toBe("Done");
 	});
 });
