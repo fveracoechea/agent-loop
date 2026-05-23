@@ -99,8 +99,8 @@ describe("runAgentPromptStreamed", () => {
 				promptAsync: async () => ({ data: undefined }),
 				messages: async () => ({ data: finalMessages }),
 			},
-			event: {
-				subscribe: async () => ({ stream }),
+			global: {
+				event: async () => ({ stream }),
 			},
 		} as unknown as import("./sdk").OpencodeClient;
 	}
@@ -108,29 +108,35 @@ describe("runAgentPromptStreamed", () => {
 	test("returns accumulated text from streamed text parts", async () => {
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Hello ",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Hello ",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Hello ",
 					},
-					delta: "Hello ",
 				},
 			},
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Hello world",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Hello world",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "world",
 					},
-					delta: "world",
 				},
 			},
 		];
@@ -185,29 +191,35 @@ describe("runAgentPromptStreamed", () => {
 
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Done",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Done",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Done",
 					},
-					delta: "Done",
 				},
 			},
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "reasoning",
-						text: "Thinking...",
-						id: "p2",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "reasoning",
+							text: "Thinking...",
+							id: "p2",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Thinking...",
 					},
-					delta: "Thinking...",
 				},
 			},
 		];
@@ -244,27 +256,33 @@ describe("runAgentPromptStreamed", () => {
 
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "tool",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
 					},
 				},
 			},
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Result",
-						id: "p2",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Result",
+							id: "p2",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Result",
 					},
-					delta: "Result",
 				},
 			},
 		];
@@ -304,29 +322,35 @@ describe("runAgentPromptStreamed", () => {
 
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Other",
-						id: "p1",
-						sessionID: "other-session",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Other",
+							id: "p1",
+							sessionID: "other-session",
+							messageID: "m1",
+						},
+						delta: "Other",
 					},
-					delta: "Other",
 				},
 			},
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Target",
-						id: "p2",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Target",
+							id: "p2",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Target",
 					},
-					delta: "Target",
 				},
 			},
 		];
@@ -363,16 +387,19 @@ describe("runAgentPromptStreamed", () => {
 	test("extracts text from SDK-shaped session.messages response", async () => {
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Hello ",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Hello ",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Hello ",
 					},
-					delta: "Hello ",
 				},
 			},
 		];
@@ -430,22 +457,28 @@ describe("runAgentPromptStreamed", () => {
 		// but emits session.idle when the agent finishes.
 		const events = [
 			{
-				type: "message.part.updated",
-				properties: {
-					part: {
-						type: "text",
-						text: "Done",
-						id: "p1",
-						sessionID: "s1",
-						messageID: "m1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "text",
+							text: "Done",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+						},
+						delta: "Done",
 					},
-					delta: "Done",
 				},
 			},
 			{
-				type: "session.idle",
-				properties: {
-					sessionID: "s1",
+				directory: "/path/to/worktree",
+				payload: {
+					type: "session.idle",
+					properties: {
+						sessionID: "s1",
+					},
 				},
 			},
 			// Stream continues forever — but we should have already broken out

@@ -137,14 +137,20 @@ export async function runAgentPromptStreamed(
 			},
 		});
 
-		// Subscribe to events
-		const { stream } = await client.event.subscribe({});
+		// Subscribe to global events (system-wide, not directory-scoped)
+		const { stream } = await client.global.event({});
 
 		// Accumulate streamed text as fallback
 		let accumulatedText = "";
 
 		// Stream events and print deltas
-		for await (const event of stream) {
+		for await (const rawEvent of stream) {
+			// Unwrap GlobalEvent payload if needed
+			const event =
+				rawEvent && typeof rawEvent === "object" && "payload" in rawEvent
+					? (rawEvent as { payload: unknown }).payload
+					: rawEvent;
+
 			if (
 				event &&
 				typeof event === "object" &&
