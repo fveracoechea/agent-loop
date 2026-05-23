@@ -4,6 +4,7 @@ import {
 	parseCompletionSignal,
 	runAgentPromptStreamed,
 } from "./sdk";
+import { unwrap, unwrapErr } from "./test-helpers";
 
 describe("parseCompletionSignal", () => {
 	test("returns COMPLETE when output contains <promise>COMPLETE</promise>", () => {
@@ -155,10 +156,7 @@ describe("runAgentPromptStreamed", () => {
 			"implementer",
 		);
 
-		expect(result.isOk()).toBe(true);
-		if (result.isOk()) {
-			expect(result.value).toBe("Hello world");
-		}
+		expect(unwrap(result)).toBe("Hello world");
 	});
 
 	test("returns error when promptAsync fails", async () => {
@@ -178,10 +176,8 @@ describe("runAgentPromptStreamed", () => {
 			"implementer",
 		);
 
-		expect(result.isErr()).toBe(true);
-		if (result.isErr()) {
-			expect(result.error.message).toContain("prompt failed");
-		}
+		const error = unwrapErr(result);
+		expect(error.message).toContain("prompt failed");
 	});
 
 	test("prints text and reasoning deltas with phase prefix", async () => {
@@ -356,10 +352,7 @@ describe("runAgentPromptStreamed", () => {
 			"implementer",
 		);
 
-		expect(result.isOk()).toBe(true);
-		if (result.isOk()) {
-			expect(result.value).toBe("Target");
-		}
+		expect(unwrap(result)).toBe("Target");
 		expect(consoleSpy).not.toHaveBeenCalledWith(
 			expect.stringContaining("Other"),
 		);

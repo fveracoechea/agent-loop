@@ -11,15 +11,12 @@ import {
 	mergeBranch,
 	removeWorktree,
 } from "./git";
+import { unwrap } from "./test-helpers";
 
 describe("git module", () => {
 	test("getCurrentBranch returns the current branch", async () => {
-		const result = await getCurrentBranch();
-
-		expect(result.isOk()).toBe(true);
-		if (result.isOk()) {
-			expect(result.value.length).toBeGreaterThan(0);
-		}
+		const branch = unwrap(await getCurrentBranch());
+		expect(branch.length).toBeGreaterThan(0);
 	});
 
 	test("hasCommits can check for commits between branches", async () => {

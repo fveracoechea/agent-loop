@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_CONFIG, loadConfig } from "./config";
+import { unwrap } from "./test-helpers";
 
 describe("DEFAULT_CONFIG", () => {
 	test("has expected default values", () => {
@@ -20,12 +21,9 @@ describe("DEFAULT_CONFIG", () => {
 
 describe("loadConfig", () => {
 	test("returns default config when file does not exist", async () => {
-		const result = await loadConfig();
+		const config = unwrap(await loadConfig());
 
-		expect(result.isOk()).toBe(true);
-		if (result.isOk()) {
-			expect(result.value.targetBranch).toBe("main");
-			expect(result.value.maxIterations).toBe(10);
-		}
+		expect(config.targetBranch).toBe("main");
+		expect(config.maxIterations).toBe(10);
 	});
 });
