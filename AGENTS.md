@@ -22,3 +22,8 @@ Default canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 
 Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Architecture Decisions
+
+- **ADR-0001**: One Issue Per Iteration — `docs/adr/0001-one-issue-per-iteration.md`
+- **ADR-0002**: Real-Time Streaming Feedback — `docs/adr/0002-real-time-streaming-feedback.md`
+

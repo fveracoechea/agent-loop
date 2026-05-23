@@ -8,7 +8,8 @@ An orchestration script that delegates feature development to autonomous AI agen
 The orchestration process that runs iterations of implementer and reviewer until the task is complete or max iterations are reached.
 
 **Iteration**:
-One complete cycle consisting of: worktree creation, Implementer execution, Reviewer execution, merge to source branch, and cleanup.
+One complete cycle consisting of: worktree creation, Implementer execution, Reviewer execution, merge to source branch, cleanup, and an Iteration Summary report.
+_Avoid_: Cycle, round, pass
 
 **Implementer**:
 An AI agent session whose role is to read the prompt and make code changes in the worktree.
@@ -62,6 +63,22 @@ _Avoid_: Ticket system, bug tracker, task manager
 The label (or equivalent marker) that indicates an issue is fully specified and safe for an AFK agent to pick up. The actual string varies per project and is mapped in `docs/agents/triage-labels.md`.
 _Avoid_: Ready label, agent-ready, todo
 
+**Issue Scope**:
+The constraint that the Implementer must resolve exactly one ready-for-agent issue per session. The Implementer discovers, implements, commits, and updates the tracker for a single issue before stopping.
+_Avoid_: Batch, bulk, multi-issue
+
+**Streamed Output**:
+Real-time text and reasoning deltas printed to the terminal as the agent generates them, produced by subscribing to the SDK's SSE event stream during `promptAsync` execution.
+_Avoid_: Live log,实时 output, progressive display
+
+**Phase Prefix**:
+The bracketed label (`[Implementer]` or `[Reviewer]`) prepended to each line of Streamed Output so the user knows which agent role produced it.
+_Avoid_: Role tag, agent label, prefix marker
+
+**Iteration Summary**:
+A concise report printed after an iteration's merge, showing the Completion Signal, commit count, commit log, and merge status.
+_Avoid_: Summary report, iteration log, wrap-up
+
 ## Flagged ambiguities
 
 - "Branch" without qualification could mean Source Branch, Target Branch, or an iteration branch. Always disambiguate.
@@ -93,3 +110,15 @@ _Avoid_: Ready label, agent-ready, todo
 > **Dev**: What if my project uses GitLab instead of GitHub for issues?
 >
 > **Expert**: The Implementer reads `docs/agents/issue-tracker.md` from the Project Agent Configuration. If that file describes GitLab conventions (using `glab`), the agent uses those commands. The loop is tracker-agnostic — it depends entirely on what the project documents about itself.
+>
+> **Dev**: How many issues does the Implementer handle in one iteration?
+>
+> **Expert**: Exactly one. The Implementer picks the highest-priority ready issue, implements it, commits, updates the tracker, and stops. It outputs `NEXT` if more ready issues exist, or `COMPLETE` if not.
+>
+> **Dev**: What do I see while the agents are running?
+>
+> **Expert**: Real-time streamed output. Each line is prefixed with `[Implementer]` or `[Reviewer]`, and you see text and reasoning deltas as they generate. When the stream closes, the loop prints an Iteration Summary with commits and signal.
+>
+> **Dev**: What happens if the streaming connection drops?
+>
+> **Expert**: The iteration aborts immediately. The worktree is preserved so you can inspect what happened. The loop does not silently retry or fall back to blocking mode.
