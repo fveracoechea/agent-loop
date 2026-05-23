@@ -22,7 +22,7 @@ The loop repeats until the task is complete or the maximum number of iterations 
 Run directly from GitHub without installing:
 
 ```sh
-bunx github:fveracoechea/agent-loop#HEAD
+bunx github:fveracoechea/agent-loop#main
 ```
 
 ## Usage
@@ -73,7 +73,7 @@ export default {
 ### 3. Run
 
 ```sh
-bunx github:fveracoechea/agent-loop
+bunx github:fveracoechea/agent-loop#main
 ```
 
 The loop will:
