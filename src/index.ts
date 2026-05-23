@@ -13,6 +13,8 @@ import {
 	removeWorktree,
 } from "./git";
 import { logger } from "./logger";
+import { implementPrompt } from "./prompts/implement-prompt";
+import { reviewPrompt } from "./prompts/review-prompt";
 import {
 	type CompletionSignal,
 	createSession,
@@ -125,9 +127,6 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 				// Phase 1: Implementer
 				// -----------------------------------------------------------------
 
-				const implementPrompt = await Bun.file(
-					config.implementer.promptPath,
-				).text();
 				const fullImplementPrompt = `${context}\n\n${implementPrompt}`;
 
 				logger.info("Running implementer...");
@@ -190,7 +189,6 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 				// Phase 2: Reviewer
 				// -----------------------------------------------------------------
 
-				const reviewPrompt = await Bun.file(config.reviewer.promptPath).text();
 				const fullReviewPrompt = `${context}\n\n${reviewPrompt}`;
 
 				logger.info("Running reviewer...");

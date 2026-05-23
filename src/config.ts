@@ -14,7 +14,6 @@ const agentConfigSchema = z.object({
 			"Model must be in 'provider/model' format (e.g. 'opencode/kimi-k2.6')",
 		)
 		.default("opencode/kimi-k2.6"),
-	promptPath: z.string().default("./agent-loop/implement-prompt.md"),
 });
 
 const configSchema = z.object({
@@ -24,11 +23,9 @@ const configSchema = z.object({
 	worktreesDir: z.string().default("agent-loop/worktrees"),
 	implementer: agentConfigSchema.default({
 		model: "opencode/kimi-k2.6",
-		promptPath: "./agent-loop/implement-prompt.md",
 	}),
 	reviewer: agentConfigSchema.default({
 		model: "opencode/claude-sonnet-4-6",
-		promptPath: "./agent-loop/review-prompt.md",
 	}),
 });
 
@@ -45,11 +42,9 @@ export const DEFAULT_CONFIG: Config = {
 	worktreesDir: "agent-loop/worktrees",
 	implementer: {
 		model: "opencode/kimi-k2.6",
-		promptPath: "./agent-loop/implement-prompt.md",
 	},
 	reviewer: {
 		model: "opencode/claude-sonnet-4-6",
-		promptPath: "./agent-loop/review-prompt.md",
 	},
 };
 

@@ -58,11 +58,9 @@ export default {
   worktreesDir: "agent-loop/worktrees", // Where worktrees are created
   implementer: {
     model: "opencode/kimi-k2.6",          // Model for the Implementer agent
-    promptPath: "./agent-loop/implement-prompt.md", // Custom implementer prompt
   },
   reviewer: {
     model: "opencode/claude-sonnet-4-6",  // Model for the Reviewer agent
-    promptPath: "./agent-loop/review-prompt.md",      // Custom reviewer prompt
   },
 };
 ```
@@ -108,7 +106,7 @@ The agent reads this context and acts accordingly. This means:
 - **Rust project?** The agent discovers `cargo test` and `cargo clippy` from the manifest.
 - **Python project?** The agent discovers `pytest` and `ruff` from `pyproject.toml`.
 
-You can customize the prompt files (`agent-loop/implement-prompt.md`, `agent-loop/review-prompt.md`) to add role-specific instructions, but you do not need to hardcode toolchain commands — the agent discovers them from your project's own docs.
+You can customize the prompts by editing `src/prompts/implement-prompt.ts` and `src/prompts/review-prompt.ts` to add role-specific instructions, but you do not need to hardcode toolchain commands — the agent discovers them from your project's own docs.
 
 ## How It Works
 

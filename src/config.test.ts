@@ -11,16 +11,10 @@ describe("DEFAULT_CONFIG", () => {
 
 	test("implementer has defaults", () => {
 		expect(DEFAULT_CONFIG.implementer.model).toBe("opencode/kimi-k2.6");
-		expect(DEFAULT_CONFIG.implementer.promptPath).toBe(
-			"./agent-loop/implement-prompt.md",
-		);
 	});
 
 	test("reviewer has defaults", () => {
 		expect(DEFAULT_CONFIG.reviewer.model).toBe("opencode/claude-sonnet-4-6");
-		expect(DEFAULT_CONFIG.reviewer.promptPath).toBe(
-			"./agent-loop/review-prompt.md",
-		);
 	});
 });
 
