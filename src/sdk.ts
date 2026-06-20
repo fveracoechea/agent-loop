@@ -87,34 +87,42 @@ function parseModel(model: string): { providerID: string; modelID: string } {
 	};
 }
 
-export async function runAgentPrompt(
-	client: OpencodeClient,
-	sessionId: string,
-	model: string,
-	prompt: string,
-): Promise<Result<string, SdkError>> {
-	try {
-		const { providerID, modelID } = parseModel(model);
-		const result = await client.session.prompt({
-			path: { id: sessionId },
-			body: {
-				model: { providerID, modelID },
-				parts: [{ type: "text", text: prompt }],
-			},
-		});
+const MAX_TOOL_DETAIL = 80;
 
-		// Extract text from response parts
-		const parts = result.data?.parts ?? [];
-		const text = parts
-			.filter((part) => part.type === "text")
-			.map((part) => part.text)
-			.join("");
+/**
+ * Build a human-readable description for a running tool.
+ *
+ * `state.title` is optional while a tool is running (only guaranteed on
+ * `completed`). When it's missing, extract a description from `state.input`
+ * using the field names opencode's tools share: `command`/`cmd` for bash,
+ * `filePath`/`path` for file tools, `pattern` for glob/grep.
+ */
+function describeToolInput(_tool: string, input: unknown): string {
+	if (input === null || typeof input !== "object") return "";
+	const obj = input as Record<string, unknown>;
 
-		return ok(text);
-	} catch (cause) {
-		const message = cause instanceof Error ? cause.message : String(cause);
-		return err(sdkError(`Prompt failed: ${message}`, "session.prompt"));
-	}
+	const str = (value: unknown): string =>
+		typeof value === "string" ? value : "";
+
+	const command = str(obj.command) || str(obj.cmd);
+	if (command) return truncate(command);
+
+	const filePath = str(obj.filePath) || str(obj.path);
+	if (filePath) return truncate(filePath);
+
+	const pattern = str(obj.pattern);
+	if (pattern) return truncate(pattern);
+
+	const query = str(obj.query);
+	if (query) return truncate(query);
+
+	return "";
+}
+
+function truncate(value: string): string {
+	const single = value.replace(/\s+/g, " ").trim();
+	if (single.length <= MAX_TOOL_DETAIL) return single;
+	return `${single.slice(0, MAX_TOOL_DETAIL - 1)}…`;
 }
 
 export async function runAgentPromptStreamed(
@@ -236,10 +244,20 @@ export async function runAgentPromptStreamed(
 							const state = toolPart.state;
 
 							if (state.status === "running") {
-								const title = state.title ?? "";
-								console.log(`[${label}] 🔧 ${toolPart.tool}: ${title}`);
+								const detail =
+									state.title || describeToolInput(toolPart.tool, state.input);
+								console.log(
+									detail
+										? `[${label}] 🔧 ${toolPart.tool}: ${detail}`
+										: `[${label}] 🔧 ${toolPart.tool}`,
+								);
 							} else if (state.status === "completed") {
-								console.log(`[${label}] ✓ ${toolPart.tool} done`);
+								const detail = state.title || "";
+								console.log(
+									detail
+										? `[${label}] ✓ ${toolPart.tool}: ${detail}`
+										: `[${label}] ✓ ${toolPart.tool} done`,
+								);
 							} else if (state.status === "error") {
 								console.log(`[${label}] ✗ ${toolPart.tool}: ${state.error}`);
 							}

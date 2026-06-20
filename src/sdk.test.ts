@@ -298,6 +298,224 @@ describe("runAgentPromptStreamed", () => {
 		consoleSpy.mockRestore();
 	});
 
+	test("extracts bash command from input when title is missing", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "bash",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: { command: "git status --short" },
+								time: { start: 0 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"[Implementer] 🔧 bash: git status --short",
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("extracts glob pattern from input when title is missing", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "glob",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: { pattern: "src/**/*.ts" },
+								time: { start: 0 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"[Implementer] 🔧 glob: src/**/*.ts",
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("extracts file path from input when title is missing", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "read",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: { filePath: "src/index.ts" },
+								time: { start: 0 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith(
+			"[Implementer] 🔧 read: src/index.ts",
+		);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("truncates long bash commands", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const longCommand = "x".repeat(120);
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "bash",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: { command: longCommand },
+								time: { start: 0 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		const call = consoleSpy.mock.calls.find((c) =>
+			String(c[0]).includes("🔧 bash:"),
+		);
+		expect(call).toBeDefined();
+		const logged = String(call?.[0]);
+		expect(logged).toContain("…");
+		expect(logged.length).toBeLessThan(longCommand.length);
+
+		consoleSpy.mockRestore();
+	});
+
+	test("prints tool name without colon when no detail available", async () => {
+		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
+
+		const events = [
+			{
+				directory: "/path/to/worktree",
+				payload: {
+					type: "message.part.updated",
+					properties: {
+						part: {
+							type: "tool",
+							id: "p1",
+							sessionID: "s1",
+							messageID: "m1",
+							tool: "webfetch",
+							callID: "c1",
+							state: {
+								status: "running",
+								input: {},
+								time: { start: 0 },
+							},
+						},
+					},
+				},
+			},
+		];
+
+		const client = createMockClient(events);
+		await runAgentPromptStreamed(
+			client,
+			"s1",
+			"opencode/test",
+			"prompt",
+			"implementer",
+		);
+
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] 🔧 webfetch");
+
+		consoleSpy.mockRestore();
+	});
+
 	test("renders completed tool part", async () => {
 		const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
 
@@ -337,7 +555,7 @@ describe("runAgentPromptStreamed", () => {
 			"implementer",
 		);
 
-		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] ✓ edit done");
+		expect(consoleSpy).toHaveBeenCalledWith("[Implementer] ✓ edit: edit file");
 
 		consoleSpy.mockRestore();
 	});

@@ -1,3 +1,4 @@
+import path from "node:path";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 import { type ConfigError, configError } from "./errors";
@@ -52,7 +53,10 @@ export const DEFAULT_CONFIG: Config = {
 // Loader
 // ---------------------------------------------------------------------------
 
-const CONFIG_PATH = "./agent-loop.config.ts";
+// Resolve relative to cwd so both Bun.file() and import() use the same path.
+// Without this, import("./agent-loop.config.ts") resolves relative to this
+// module (src/config.ts), not the project root.
+const CONFIG_PATH = path.resolve(process.cwd(), "agent-loop.config.ts");
 
 export async function loadConfig(): Promise<Result<Config, ConfigError>> {
 	const file = Bun.file(CONFIG_PATH);
