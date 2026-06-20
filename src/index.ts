@@ -326,6 +326,10 @@ export async function main(): Promise<Result<AgentLoopResult, AgentLoopError>> {
 		iterationsCompleted = iteration;
 	}
 
+	// Remove the now-empty worktrees parent directory. Uses rmdir so any
+	// preserved (failed-iteration) worktrees are left intact.
+	await Bun.$`rmdir ${absoluteWorktreesDir}`.nothrow().quiet();
+
 	// ---------------------------------------------------------------------------
 	// Final PR
 	// ---------------------------------------------------------------------------
