@@ -5,7 +5,7 @@
     "": {
       "name": "ralph-opencode",
       "dependencies": {
-        "@opencode-ai/sdk": "^1.15.8",
+        "@opencode-ai/sdk": "^1.17.8",
         "consola": "^3.4.2",
         "neverthrow": "^8.2.0",
         "zod": "^4.4.3",
@@ -38,7 +38,7 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.15", "", { "os": "win32", "cpu": "x64" }, "sha512-zBrGq5mx5wwpnow4+2BxUvleDM+GNd4sLbPaMapsSLQLD0NGRCquqPBTgN+7XkUteHvj7M+BstuI8tmnV7+HgQ=="],
 
-    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.15.8", "", { "dependencies": { "cross-spawn": "7.0.6" } }, "sha512-e6O78KooMK3o5kZeUO1MQbzRt3W0fmQkE2ZdVRE50s10kBHrOavEeAEwUhFMaH8z2TZV/59az98nUlBLAE+wzA=="],
+    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.17.8", "", { "dependencies": { "cross-spawn": "7.0.6" } }, "sha512-6MKmsj2ujZyL44jy+12dpwWYDYKPS9fUr+0wVQxaIlPYQ/eAt8T8T3QrybplJ5ZtHfZUX+esXZ02x2UYYm7oEw=="],
 
     "@rollup/rollup-linux-x64-gnu": ["@rollup/rollup-linux-x64-gnu@4.60.4", "", { "os": "linux", "cpu": "x64" }, "sha512-Boiz5+MsaROEWDf+GGEwF8VMHGhlUoQMtIPjOgA5fv4osupqTVnJteQNKJwUcnUog2G55jYXH7KZFFiJe0TEzQ=="],
 

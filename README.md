@@ -22,8 +22,12 @@ The loop repeats until the task is complete or the maximum number of iterations 
 Run directly from GitHub without installing:
 
 ```sh
-bunx github:fveracoechea/agent-loop#main
+bunx github:fveracoechea/agent-loop#latest   # newest release (recommended)
+bunx github:fveracoechea/agent-loop#v0.1.0   # pinned to a specific release
+bunx github:fveracoechea/agent-loop#main     # latest commit on main
 ```
+
+Releases are tagged as `vX.Y.Z` plus a moving `latest` tag. See `scripts/release.ts` to cut a new release.
 
 ## Usage
 
@@ -73,7 +77,7 @@ export default {
 ### 3. Run
 
 ```sh
-bunx github:fveracoechea/agent-loop#main
+bunx github:fveracoechea/agent-loop#latest
 ```
 
 The loop will:

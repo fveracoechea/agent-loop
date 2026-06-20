@@ -1,5 +1,6 @@
 {
-	"name": "ralph-opencode",
+	"name": "agent-loop",
+	"version": "0.1.0",
 	"private": true,
 	"bin": {
 		"agent-loop": "./agent-loop.ts"
@@ -18,7 +19,7 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@opencode-ai/sdk": "^1.15.8",
+		"@opencode-ai/sdk": "^1.17.8",
 		"consola": "^3.4.2",
 		"neverthrow": "^8.2.0",
 		"zod": "^4.4.3"
