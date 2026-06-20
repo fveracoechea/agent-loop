@@ -54,9 +54,17 @@ async function readPackageVersion(): Promise<string> {
 }
 
 async function writePackageVersion(version: string): Promise<void> {
-	const pkg = await Bun.file("package.json").json();
-	pkg.version = version;
-	await Bun.write("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+	// Preserve formatting by editing only the version line, not re-stringifying
+	const text = await Bun.file("package.json").text();
+	const updated = text.replace(
+		/"version"\s*:\s*"[^"]*"/,
+		`"version": "${version}"`,
+	);
+	if (updated === text) {
+		console.error("Failed to update version in package.json");
+		process.exit(1);
+	}
+	await Bun.write("package.json", updated);
 }
 
 async function main(): Promise<void> {

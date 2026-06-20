@@ -1,27 +1,27 @@
 {
-  "name": "agent-loop",
-  "version": "0.1.0",
-  "private": true,
-  "bin": {
-    "agent-loop": "./agent-loop.ts"
-  },
-  "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc -b --noEmit",
-    "lint:ci": "biome ci .",
-    "lint:fix": "biome check --write --unsafe ."
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.15",
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@opencode-ai/sdk": "^1.17.8",
-    "consola": "^3.4.2",
-    "neverthrow": "^8.2.0",
-    "zod": "^4.4.3"
-  }
+	"name": "agent-loop",
+	"version": "0.1.0",
+	"private": true,
+	"bin": {
+		"agent-loop": "./agent-loop.ts"
+	},
+	"scripts": {
+		"test": "bun test",
+		"typecheck": "tsc -b --noEmit",
+		"lint:ci": "biome ci .",
+		"lint:fix": "biome check --write --unsafe ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.15",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@opencode-ai/sdk": "^1.17.8",
+		"consola": "^3.4.2",
+		"neverthrow": "^8.2.0",
+		"zod": "^4.4.3"
+	}
 }
